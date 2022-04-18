@@ -1,4 +1,5 @@
 import java.math.BigInteger;
+import java.nio.ByteOrder;
 import java.util.Arrays;
 
 /**
@@ -11,7 +12,9 @@ public class cSHAKE256 {
     public static void main(String[] args) {
         cSHAKE256 shake = new cSHAKE256();
 
+        shake.print_bytes(shake.left_encode(0));
         shake.print_bytes(shake.right_encode(0));
+
     }
 
     /**
@@ -31,29 +34,41 @@ public class cSHAKE256 {
     }
 
     public byte[] right_encode(int x) {
-        if (x < 0 || x >= Math.pow(2, 2040)) 
+        if (x < 0 || x >= 1 << 2040) 
             throw new IllegalArgumentException("x must satisfy the following condition: 0 <= x <= 2^2040");
 
-        // 1. let n be the smallest positive integer for which 2^8n > x
+        int n = 1;
+        while (1 << 8 * n <= x)
+            n++;
+        
+        byte[] bytes = new byte[n + 1];
+        for (int i = 0; i < bytes.length - 1; i++) {
+            bytes[i] = reverse_bits(x);     // read the first 8 bits of x and reverse them
+            x = x >> 8;                     // shift to next byte
+        }
+
+        bytes[n] = reverse_bits(n);
+        
+        return bytes;
+    }
+
+    public byte[] left_encode(int x) {
+        if (x < 0 || x >= 1 << 2040) 
+            throw new IllegalArgumentException("x must satisfy the following condition: 0 <= x <= 2^2040");
+
         int n = 1;
         while (1 << 8 * n <= x)
             n++;
 
-        // 2. let x_1, x_2, ... , x_n be the base-256 encoding of x satifying: 
-        //                        x = sum(2^(8(n - i)) * x_i), for i = 1 -> n
-        // 3. let O_i = enc_8(x_i), for i = 1 -> n
-        byte[] bytes = BigInteger.valueOf(x).toByteArray();
-        print_bytes(bytes);
+        byte[] bytes = new byte[n + 1];
+        for (int i = 1; i < bytes.length; i++) {
+            bytes[i] = reverse_bits(x);     // read the first 8 bits of x and reverse them
+            x = x >> 8;                     // shift to next byte
+        }
 
-        byte[] result = new byte[bytes.length + 1];
-        for (int i = 0; i < bytes.length; i++) 
-            result[i] = bytes[i];
-
-        // 4. let O_(n + 1) = enc_8(n)
-        result[bytes.length] = (byte) n;
-
-        // 5. return O = O_1 || O_2 || ... || O_n || O_(n + 1)
-        return result;
+        bytes[0] = reverse_bits(n);
+        
+        return bytes;
     }
 
     public void bytepad() {
@@ -62,14 +77,21 @@ public class cSHAKE256 {
     public void encode_string() {
     }
 
-    public void left_encode() {
-    }
+    
 
     private void print_bytes(byte[] bytes) {
         for (byte b : bytes) {
             System.out.print(Integer.toBinaryString(b & 255 | 256).substring(1) + " ");
         }
         System.out.println();
+    }
+
+    private void print_byte(byte b) {
+        System.out.println(Integer.toBinaryString(b & 255 | 256).substring(1) + " ");
+    }
+
+    private byte reverse_bits(int n) {
+        return (byte) (Integer.reverse(n) >>> (Integer.SIZE - Byte.SIZE));
     }
     
 }
