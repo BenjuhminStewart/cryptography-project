@@ -12,9 +12,10 @@ public class cSHAKE256 {
     public static void main(String[] args) {
         cSHAKE256 shake = new cSHAKE256();
 
-        shake.print_bytes(shake.left_encode(0));
-        shake.print_bytes(shake.right_encode(0));
-
+        // shake.print_bytes(shake.left_encode(0));
+        // shake.print_bytes(shake.right_encode(0));
+        // shake.print_bytes(shake.encode_string("".getBytes()));
+        shake.print_bytes(shake.bytepad(shake.encode_string("".getBytes()), 15));
     }
 
     /**
@@ -29,7 +30,7 @@ public class cSHAKE256 {
      *          Set to an empty string if no customization is desired.
      * @return  
      */
-    public byte[] cSHAKE256e(String X, int L, String N, String S) {
+    public byte[] SHAKE256(String x, int l, String n, String s) {
         return null;
     }
 
@@ -71,13 +72,42 @@ public class cSHAKE256 {
         return bytes;
     }
 
-    public void bytepad() {
+    public byte[] encode_string(byte[] s) {
+        byte[] encoded = left_encode(s.length);
+        byte[] bytes = concat_arrays(encoded, s);
+
+        return bytes;
     }
 
-    public void encode_string() {
+    public byte[] bytepad(byte[] x, int w) {
+        byte[] encoded = left_encode(w);
+        byte[] z = concat_arrays(encoded, x);
+
+        // step 2 of bytepad excluded due to redundancy?
+        while (z.length % w != 0) {
+            z = concat_byte(z, (byte) 0);
+        }
+
+        return z;
     }
 
-    
+    private byte[] concat_arrays(byte[] arr1, byte[] arr2) {
+        byte[] bytes = new byte[arr1.length + arr2.length];
+
+        System.arraycopy(arr1, 0, bytes, 0, arr1.length);
+        System.arraycopy(arr2, 0, bytes, arr1.length, arr2.length);
+
+        return bytes;
+    }
+
+    private byte[] concat_byte(byte[] arr, byte b) {
+        byte[] bytes = new byte[arr.length + 1];
+
+        System.arraycopy(arr, 0, bytes, 0, arr.length);
+        bytes[bytes.length - 1] = b;
+
+        return bytes;
+    }
 
     private void print_bytes(byte[] bytes) {
         for (byte b : bytes) {
