@@ -12,10 +12,20 @@ public class cSHAKE256 {
     public static void main(String[] args) {
         cSHAKE256 shake = new cSHAKE256();
 
-        // shake.print_bytes(shake.left_encode(0));
-        // shake.print_bytes(shake.right_encode(0));
-        // shake.print_bytes(shake.encode_string("".getBytes()));
-        shake.print_bytes(shake.bytepad(shake.encode_string("".getBytes()), 15));
+        // byte[] bytes = shake.left_encode(0);
+        // shake.print_bytes_binary(bytes);
+
+        byte[] encoded_n = shake.encode_string("".getBytes());
+        byte[] encoded_s = shake.encode_string("Email Signature".getBytes());
+
+        shake.print_bytes_hex(encoded_n);
+        shake.print_bytes_hex(encoded_s);
+
+        byte[] combined = shake.concat_arrays(encoded_n, encoded_s);
+        byte[] bytepad = shake.bytepad(combined, 168);
+
+        shake.print_bytes_hex(bytepad);
+
     }
 
     /**
@@ -62,18 +72,18 @@ public class cSHAKE256 {
             n++;
 
         byte[] bytes = new byte[n + 1];
-        for (int i = 1; i < bytes.length; i++) {
-            bytes[i] = reverse_bits(x);     // read the first 8 bits of x and reverse them
+        for (int i = bytes.length - 1; i > 0; i--) {
+            bytes[i] = (byte) x;            // read the first 8 bits of x and reverse them
             x = x >> 8;                     // shift to next byte
         }
 
-        bytes[0] = reverse_bits(n);
-        
+        bytes[0] = (byte) n;
+
         return bytes;
     }
 
     public byte[] encode_string(byte[] s) {
-        byte[] encoded = left_encode(s.length);
+        byte[] encoded = left_encode(s.length * 8);
         byte[] bytes = concat_arrays(encoded, s);
 
         return bytes;
@@ -89,6 +99,10 @@ public class cSHAKE256 {
         }
 
         return z;
+    }
+    
+    private byte reverse_bits(int n) {
+        return (byte) (Integer.reverse(n) >>> (Integer.SIZE - Byte.SIZE));
     }
 
     private byte[] concat_arrays(byte[] arr1, byte[] arr2) {
@@ -109,19 +123,26 @@ public class cSHAKE256 {
         return bytes;
     }
 
-    private void print_bytes(byte[] bytes) {
+    private void print_bytes_binary(byte[] bytes) {
         for (byte b : bytes) {
             System.out.print(Integer.toBinaryString(b & 255 | 256).substring(1) + " ");
         }
         System.out.println();
     }
 
-    private void print_byte(byte b) {
+    private void print_byte_binary(byte b) {
         System.out.println(Integer.toBinaryString(b & 255 | 256).substring(1) + " ");
     }
 
-    private byte reverse_bits(int n) {
-        return (byte) (Integer.reverse(n) >>> (Integer.SIZE - Byte.SIZE));
+    private void print_bytes_hex(byte[] bytes) {
+        for (byte b : bytes) {
+            System.out.print(Integer.toHexString(b & 255 | 256).substring(1) + " ");
+        }
+        System.out.println();
+    }
+
+    private void print_byte_hex(byte b) {
+        System.out.println(Integer.toHexString(b & 255 | 256).substring(1) + " ");
     }
     
 }
