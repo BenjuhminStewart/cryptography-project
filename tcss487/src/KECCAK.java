@@ -30,48 +30,22 @@ public class KECCAK {
 
     private byte[] b;
 
-    private int mdlen;
     private int rsiz;
     private int pt;
 
-    // should expect mdlen of 32 for 256 bit
-    public void sha3_init(int mdlen) {
-        b = new byte[200];
+    private KECCAK() { };
 
-        this.mdlen = mdlen;
-        this.rsiz = 200 - 2 * mdlen;
-        this.pt = 0;
+    private void sha3_init(int mdlen) {
+        b = new byte[200];
+        rsiz = 200 - 2 * mdlen;
+        pt = 0;
     }
 
-    public void shake256_init() {
+    private void shake256_init() {
         sha3_init(SHAKE256_MDLEN);
     }
 
-    static byte[] CSHAKE256(byte[] X, int L, byte[] N, byte[] S) {
-        byte[] bytes = new byte[L >>> 3];
-        KECCAK k = new KECCAK();
-
-        k.cshake256_init(N, S);
-        k.sha3_update(X, X.length);
-        k.shake_xof();
-        k.shake_out(bytes, bytes.length);
-
-        return bytes; 
-    }
-
-    public void cshake256_init(byte[] N, byte[] S) {
-        shake256_init();
-
-        byte[] prefix = bytepad(concat_arrays(encode_string(N), encode_string(S)), 136);
-        sha3_update(prefix, prefix.length);
-    }
-
-    /**
-     * Update the state with the given amount of KECCAK rounds. From original documentation,
-     * 'b' and 'q' make up the 'st' (state) struct.
-     * @param b byte array of size 200 
-     */
-    public void sha3_keccakf(byte[] b) {
+    private void sha3_keccakf(byte[] b) {
 
         long[] q = new long[25];
         long[] bc = new long[5];
@@ -126,7 +100,7 @@ public class KECCAK {
         }
     }
 
-    public void sha3_update(byte[] data, int len) {
+    private void sha3_update(byte[] data, int len) {
         int j = pt;
         for (int i = 0; i < len; i++) {
             b[j++] ^= data[i];
@@ -137,21 +111,8 @@ public class KECCAK {
         }
         pt = j;
     }
-
-    public byte[] sha3_final() {
-        byte[] bytes = new byte[mdlen];
-        
-        b[pt] ^= 0x06;
-        b[rsiz - 1] ^= 0x80;
-        sha3_keccakf(b);
-
-        for (int i = 0; i < mdlen; i++)
-            bytes[i] = b[i];
-
-        return bytes;
-    }
     
-    public void shake_xof() {
+    private void shake_xof() {
         // original = 0x1F
         b[pt] ^= 0x04;
         b[rsiz -1] ^= 0x80;
@@ -159,7 +120,7 @@ public class KECCAK {
         pt = 0;
     }
 
-    public void shake_out(byte[] out, int len) {
+    private void shake_out(byte[] out, int len) {
         int j = pt;
         for (int i = 0; i < len; i++) {
             if (j >= rsiz) {
@@ -171,13 +132,11 @@ public class KECCAK {
         pt = j;
     } 
 
-    public long ROTL64(long x, int y) {
-        return (((x) << (y)) | ((x) >> (64 - (y))));
+    private long ROTL64(long x, int y) {
+        return (((x) << (y)) | ((x) >>> (64 - (y))));
     }
 
-    private KECCAK() { };
-
-    public byte[] left_encode(int x) {
+    private static byte[] left_encode(int x) {
         int n = 1;
         while (1 << 8 * n <= x)
             n++;
@@ -193,14 +152,30 @@ public class KECCAK {
         return bytes;
     }
 
-    public byte[] encode_string(byte[] s) {
+    private static byte[] right_encode(int x) {
+        int n = 1;
+        while (1 << 8 * n <= x)
+            n++;
+
+        byte[] bytes = new byte[n + 1];
+        for (int i = bytes.length - 2; i >= 0; i--) {
+            bytes[i] = (byte) x;            
+            x = x >> 8;                     
+        }
+
+        bytes[bytes.length - 1] = (byte) n;
+
+        return bytes;
+    }
+
+    private static byte[] encode_string(byte[] s) {
         byte[] encoded = left_encode(s.length * 8);
         byte[] bytes = concat_arrays(encoded, s);
 
         return bytes;
     }
 
-    public byte[] bytepad(byte[] x, int w) {
+    private static byte[] bytepad(byte[] x, int w) {
         byte[] encoded = left_encode(w);
         byte[] z = concat_arrays(encoded, x);
 
@@ -213,7 +188,7 @@ public class KECCAK {
         return z;
     }
 
-    private byte[] concat_arrays(byte[] arr1, byte[] arr2) {
+    private static byte[] concat_arrays(byte[] arr1, byte[] arr2) {
         byte[] bytes = new byte[arr1.length + arr2.length];
 
         System.arraycopy(arr1, 0, bytes, 0, arr1.length);
@@ -222,7 +197,7 @@ public class KECCAK {
         return bytes;
     }
 
-    private byte[] concat_byte(byte[] arr, byte b) {
+    private static byte[] concat_byte(byte[] arr, byte b) {
         byte[] bytes = new byte[arr.length + 1];
 
         System.arraycopy(arr, 0, bytes, 0, arr.length);
@@ -231,22 +206,45 @@ public class KECCAK {
         return bytes;
     }
 
-    private void print_bytes_hex(byte[] bytes) {
+    public static void print_bytes_hex(byte[] bytes) {
         for (byte b : bytes) {
             System.out.print(Integer.toHexString(b & 255 | 256).substring(1) + " ");
         }
         System.out.println();
     }
 
+    public static byte[] CSHAKE256(byte[] X, int L, byte[] N, byte[] S) {
+        byte[] bytes = new byte[L / 8];
+        KECCAK k = new KECCAK();
 
-    
+        k.shake256_init();
+
+        // KECCAK[512](bytepad(encode_string(N) || encode_string(S), 136) || X || 00, L)
+        byte[] arg = concat_arrays(bytepad(concat_arrays(encode_string(N), encode_string(S)), 136), X);
+        k.sha3_update(arg, arg.length);
+
+
+        k.shake_xof();
+        k.shake_out(bytes, bytes.length);
+
+        return bytes; 
+    }
+
+    public static byte[] KMACXOF256(byte[] K, byte[] X, int L, byte[] S) {
+        byte[] new_x = concat_arrays(concat_arrays(bytepad(encode_string(K), 136), X), right_encode(L));
+        return CSHAKE256(new_x, L, "KMAC".getBytes(), S);
+    }
+
     public static void main(String[] args) {
-        byte[] N = "".getBytes();
-        byte[] S = "Email Signature".getBytes();
-        byte[] X = new byte[] {0, 1, 2, 3};
-        int L = 512;
 
-        byte[] bytes = CSHAKE256(X, L, N, S);
-        new KECCAK().print_bytes_hex(bytes);
+        int L = 512;
+        byte[] S = "My Tagged Application".getBytes();
+        byte[] X = new byte[] {0, 1, 2, 3};
+        byte[] K = new byte[] {64, 65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80,
+                               81, 82, 83, 84, 85, 86, 87, 88, 89, 90, 91, 92, 93, 94, 95};
+
+        // key, data, length, cust string
+        byte[] bytes = KMACXOF256(K, X, L, S);
+        print_bytes_hex(bytes);
     }
 }
