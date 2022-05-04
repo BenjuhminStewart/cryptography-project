@@ -5,9 +5,10 @@ import java.nio.file.Files;
 public class Hash {
 
     public static void main(String[] args) {
-        File key = new File("C:/Users/seshb/Documents/Repositories/cryptography-project/tcss487/src/input/key.txt");
-        File data = new File("C:/Users/seshb/Documents/Repositories/cryptography-project/tcss487/src/input/data.txt");
-        File custom = new File("C:/Users/seshb/Documents/Repositories/cryptography-project/tcss487/src/input/custom.txt");
+        String inputPath = System.getProperty("user.dir") + "/input/";
+        File key = new File(inputPath + "key.txt");
+        File data = new File(inputPath + "data.txt");
+        File custom = new File(inputPath + "custom.txt");
 
         int len = 512;
 
@@ -17,7 +18,6 @@ public class Hash {
         } catch (Exception e) {
             e.printStackTrace();
         }
-        
     }
 
     public static byte[] hashCSHAKE(File data, int L, File function, File custom) throws IOException {
