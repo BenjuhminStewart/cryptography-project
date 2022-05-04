@@ -28,114 +28,152 @@ public class KECCAK {
 
     private static final int SHAKE256_MDLEN = 32;
 
-    private byte[] b;
+    private byte[] state;
 
-    private int rsiz;
+    private int rate;
     private int pt;
 
-    public KECCAK() { };
+    private KECCAK() {
+    };
 
+    /**
+     * Initialize state, rate, and pt
+     * 
+     * @param mdlen the hash output (bytes)
+     */
     private void sha3_init(int mdlen) {
-        b = new byte[200];
-        rsiz = 200 - 2 * mdlen;
+        state = new byte[200];
+        rate = 200 - 2 * mdlen;
         pt = 0;
     }
 
+    /**
+     * Call sha3_init with the hash output used for SHAKE256
+     */
     private void shake256_init() {
         sha3_init(SHAKE256_MDLEN);
     }
 
-    private void sha3_keccakf(byte[] b) {
+    /**
+     * keccak compression function
+     * 
+     * @param state the state array
+     */
+    private void sha3_keccakf(byte[] state) {
 
-        long[] q = new long[25];
-        long[] bc = new long[5];
+        long[] lanes = new long[25];
+        long[] planes = new long[5];
 
-        // map from bytes in 'b' to longs and store in 'q'
+        // map from bytes in 'state' to longs and store in 'lanes'
         for (int i = 0, j = 0; i < 25; i++, j += 8) {
-            q[i] = (((long) b[j + 0] & 0xFFL) << 0)  | (((long) b[j + 1] & 0xFFL) << 8)  |
-                   (((long) b[j + 2] & 0xFFL) << 16) | (((long) b[j + 3] & 0xFFL) << 24) |
-                   (((long) b[j + 4] & 0xFFL) << 32) | (((long) b[j + 5] & 0xFFL) << 40) |
-                   (((long) b[j + 6] & 0xFFL) << 48) | (((long) b[j + 7] & 0xFFL) << 56);
+            lanes[i] = (((long) state[j + 0] & 0xFFL) << 0) | (((long) state[j + 1] & 0xFFL) << 8) |
+                    (((long) state[j + 2] & 0xFFL) << 16) | (((long) state[j + 3] & 0xFFL) << 24) |
+                    (((long) state[j + 4] & 0xFFL) << 32) | (((long) state[j + 5] & 0xFFL) << 40) |
+                    (((long) state[j + 6] & 0xFFL) << 48) | (((long) state[j + 7] & 0xFFL) << 56);
         }
 
         for (int r = 0; r < KECCAKF_ROUNDS; r++) {
-
-            // theta 
+            // theta mapping
             for (int i = 0; i < 5; i++)
-                bc[i] = q[i] ^ q[i + 5] ^ q[i + 10] ^ q[i + 15] ^ q[i + 20];
+                planes[i] = lanes[i] ^ lanes[i + 5] ^ lanes[i + 10] ^ lanes[i + 15] ^ lanes[i + 20];
 
             for (int i = 0; i < 5; i++) {
-                long t = bc[(i + 4) % 5] ^ ROTL64(bc[(i + 1) % 5], 1);
+                long t = planes[(i + 4) % 5] ^ ROTL64(planes[(i + 1) % 5], 1);
                 for (int j = 0; j < 25; j += 5)
-                    q[j + i] ^= t;
+                    lanes[j + i] ^= t;
             }
 
-            // rho pi
-            long t = q[1];
+            // rho and pi mapping
+            long t = lanes[1];
             for (int i = 0; i < 24; i++) {
                 int j = KECCAKF_PILN[i];
-                bc[0] = q[j];
-                q[j] = ROTL64(t, KECCAKF_ROTC[i]);
-                t = bc[0];
+                planes[0] = lanes[j];
+                lanes[j] = ROTL64(t, KECCAKF_ROTC[i]);
+                t = planes[0];
             }
 
-            //  chi
+            // chi mapping
             for (int j = 0; j < 25; j += 5) {
-                for (int i = 0; i < 5; i++) 
-                    bc[i] = q[j + i];
-                for (int i = 0; i < 5; i++) 
-                    q[j + i] ^= (~bc[(i + 1) % 5]) & bc[(i + 2) % 5];
+                for (int i = 0; i < 5; i++)
+                    planes[i] = lanes[j + i];
+                for (int i = 0; i < 5; i++)
+                    lanes[j + i] ^= (~planes[(i + 1) % 5]) & planes[(i + 2) % 5];
             }
 
-            //  iota
-            q[0] ^= KECCAKF_RNDC[r];
+            // iota mapping
+            lanes[0] ^= KECCAKF_RNDC[r];
         }
 
-        // map from longs in 'q' to bytes and store in 'b'
+        // map from longs in 'lanes' to bytes and store in 'state'
         for (int i = 0, j = 0; i < 25; i++, j += 8) {
-            long t = q[i];
+            long t = lanes[i];
             for (int k = 0; k < Byte.SIZE; k++) {
-                b[j + k] = (byte) ((t >> k * Byte.SIZE) & 0xFF);
+                state[j + k] = (byte) ((t >> k * Byte.SIZE) & 0xFF);
             }
         }
     }
 
+    /**
+     * Update state with new data
+     * 
+     * @param data new data
+     * @param len  length
+     */
     private void sha3_update(byte[] data, int len) {
         int j = pt;
         for (int i = 0; i < len; i++) {
-            b[j++] ^= data[i];
-            if (j >= rsiz) {
-                sha3_keccakf(b);
+            state[j++] ^= data[i];
+            if (j >= rate) {
+                sha3_keccakf(state);
                 j = 0;
             }
         }
         pt = j;
     }
-    
+
+    /**
+     * Extensible Output Function
+     */
     private void shake_xof() {
         // original = 0x1F
-        b[pt] ^= 0x04;
-        b[rsiz -1] ^= 0x80;
-        sha3_keccakf(b);
+        state[pt] ^= 0x04;
+        state[rate - 1] ^= 0x80;
+        sha3_keccakf(state);
         pt = 0;
     }
 
+    /**
+     * Extensible Output Function
+     */
     private void shake_out(byte[] out, int len) {
         int j = pt;
         for (int i = 0; i < len; i++) {
-            if (j >= rsiz) {
-                sha3_keccakf(b);
+            if (j >= rate) {
+                sha3_keccakf(state);
                 j = 0;
             }
-            out[i] = b[j++];
+            out[i] = state[j++];
         }
         pt = j;
-    } 
+    }
 
+    /**
+     * Rotate 64-bit value to the left
+     * 
+     * @param x the 64-bit value to be shifted
+     * @param y the value of positions to be shifted
+     * @return x rotated to the left by y
+     */
     private long ROTL64(long x, int y) {
         return (((x) << (y)) | ((x) >>> (64 - (y))));
     }
 
+    /**
+     * Encode Left
+     * 
+     * @param x the int value to be left encoded
+     * @return the left encoded value, x
+     */
     private static byte[] left_encode(int x) {
         int n = 1;
         while (1 << 8 * n <= x)
@@ -152,6 +190,12 @@ public class KECCAK {
         return bytes;
     }
 
+    /**
+     * Encode Right
+     * 
+     * @param x the int value to be right encoded
+     * @return the right encoded value, x
+     */
     private static byte[] right_encode(int x) {
         int n = 1;
         while (1 << 8 * n <= x)
@@ -168,6 +212,12 @@ public class KECCAK {
         return bytes;
     }
 
+    /**
+     * Encode string
+     * 
+     * @param s the string to be encoded
+     * @return the encoded string, s
+     */
     private static byte[] encode_string(byte[] s) {
         byte[] encoded = left_encode(s.length * 8);
         byte[] bytes = concat_arrays(encoded, s);
@@ -175,6 +225,13 @@ public class KECCAK {
         return bytes;
     }
 
+    /**
+     * Given an encoding factor, bytepad given byte array
+     * 
+     * @param x byte array
+     * @param w factor to encode by
+     * @return the bytepadded byte array, x
+     */
     private static byte[] bytepad(byte[] x, int w) {
         byte[] encoded = left_encode(w);
         byte[] z = concat_arrays(encoded, x);
@@ -188,6 +245,13 @@ public class KECCAK {
         return z;
     }
 
+    /**
+     * Concatenate given byte arrays
+     * 
+     * @param arr1 first array
+     * @param arr2 second array
+     * @return first array concatenated with second array (first || second)
+     */
     private static byte[] concat_arrays(byte[] arr1, byte[] arr2) {
         byte[] bytes = new byte[arr1.length + arr2.length];
 
@@ -197,6 +261,13 @@ public class KECCAK {
         return bytes;
     }
 
+    /**
+     * Concatenate byte into byte array
+     * 
+     * @param arr array to concatenate byte with
+     * @param b   byte to concatenate with array
+     * @return byte concatenated with byte array
+     */
     private static byte[] concat_byte(byte[] arr, byte b) {
         byte[] bytes = new byte[arr.length + 1];
 
@@ -206,6 +277,11 @@ public class KECCAK {
         return bytes;
     }
 
+    /**
+     * Print the given byte array as a hex string
+     * 
+     * @param bytes the bytes to be printed
+     */
     public static void print_bytes_hex(byte[] bytes) {
         System.out.println(bytes_to_hex(bytes));
     }
@@ -217,6 +293,15 @@ public class KECCAK {
         return sb.toString();
     }
 
+    /**
+     * hash input using cSHAKE256
+     * 
+     * @param X input to be hashed
+     * @param L output length (bits)
+     * @param N name
+     * @param S custom string
+     * @return the hashed string
+     */
     public static byte[] CSHAKE256(byte[] X, int L, byte[] N, byte[] S) {
         byte[] bytes = new byte[L / 8];
         KECCAK k = new KECCAK();
@@ -230,11 +315,33 @@ public class KECCAK {
         k.shake_xof();
         k.shake_out(bytes, bytes.length);
 
-        return bytes; 
+        return bytes;
     }
 
+    /**
+     * Encrypt input using KMACXOF256
+     * 
+     * @param K MAC key
+     * @param X input to be encrypted
+     * @param L output length (bits)
+     * @param S custom string
+     * @return the MAC tag
+     */
     public static byte[] KMACXOF256(byte[] K, byte[] X, int L, byte[] S) {
         byte[] new_x = concat_arrays(concat_arrays(bytepad(encode_string(K), 136), X), right_encode(L));
         return CSHAKE256(new_x, L, "KMAC".getBytes(), S);
+    }
+
+    public static void main(String[] args) {
+
+        int L = 512;
+        byte[] S = "My Tagged Application".getBytes();
+        byte[] X = new byte[] { 0, 1, 2, 3 };
+        byte[] K = new byte[] { 64, 65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80,
+                81, 82, 83, 84, 85, 86, 87, 88, 89, 90, 91, 92, 93, 94, 95 };
+
+        // key, data, length, cust string
+        byte[] bytes = KMACXOF256(K, X, L, S);
+        print_bytes_hex(bytes);
     }
 }
