@@ -4,24 +4,24 @@
 public class KECCAK {
 
     private static final long[] KECCAKF_RNDC = {
-            0x0000000000000001L, 0x0000000000008082L, 0x800000000000808aL,
-            0x8000000080008000L, 0x000000000000808bL, 0x0000000080000001L,
-            0x8000000080008081L, 0x8000000000008009L, 0x000000000000008aL,
-            0x0000000000000088L, 0x0000000080008009L, 0x000000008000000aL,
-            0x000000008000808bL, 0x800000000000008bL, 0x8000000000008089L,
-            0x8000000000008003L, 0x8000000000008002L, 0x8000000000000080L,
-            0x000000000000800aL, 0x800000008000000aL, 0x8000000080008081L,
-            0x8000000000008080L, 0x0000000080000001L, 0x8000000080008008L
+        0x0000000000000001L, 0x0000000000008082L, 0x800000000000808aL,
+        0x8000000080008000L, 0x000000000000808bL, 0x0000000080000001L,
+        0x8000000080008081L, 0x8000000000008009L, 0x000000000000008aL,
+        0x0000000000000088L, 0x0000000080008009L, 0x000000008000000aL,
+        0x000000008000808bL, 0x800000000000008bL, 0x8000000000008089L,
+        0x8000000000008003L, 0x8000000000008002L, 0x8000000000000080L,
+        0x000000000000800aL, 0x800000008000000aL, 0x8000000080008081L,
+        0x8000000000008080L, 0x0000000080000001L, 0x8000000080008008L
     };
 
     private static final int[] KECCAKF_ROTC = {
-            1, 3, 6, 10, 15, 21, 28, 36, 45, 55, 2, 14,
-            27, 41, 56, 8, 25, 43, 62, 18, 39, 61, 20, 44
+        1,  3,  6,  10, 15, 21, 28, 36, 45, 55, 2,  14,
+        27, 41, 56, 8,  25, 43, 62, 18, 39, 61, 20, 44
     };
 
     private static final int[] KECCAKF_PILN = {
-            10, 7, 11, 17, 18, 3, 5, 16, 8, 21, 24, 4,
-            15, 23, 19, 13, 12, 2, 20, 14, 22, 9, 6, 1
+        10, 7,  11, 17, 18, 3, 5,  16, 8,  21, 24, 4,
+        15, 23, 19, 13, 12, 2, 20, 14, 22, 9,  6,  1
     };
 
     private static final int KECCAKF_ROUNDS = 24;
@@ -73,7 +73,6 @@ public class KECCAK {
         }
 
         for (int r = 0; r < KECCAKF_ROUNDS; r++) {
-
             // theta mapping
             for (int i = 0; i < 5; i++)
                 planes[i] = lanes[i] ^ lanes[i + 5] ^ lanes[i + 10] ^ lanes[i + 15] ^ lanes[i + 20];
@@ -182,8 +181,8 @@ public class KECCAK {
 
         byte[] bytes = new byte[n + 1];
         for (int i = bytes.length - 1; i > 0; i--) {
-            bytes[i] = (byte) x;
-            x = x >> 8;
+            bytes[i] = (byte) x;            
+            x = x >> 8;                     
         }
 
         bytes[0] = (byte) n;
@@ -204,8 +203,8 @@ public class KECCAK {
 
         byte[] bytes = new byte[n + 1];
         for (int i = bytes.length - 2; i >= 0; i--) {
-            bytes[i] = (byte) x;
-            x = x >> 8;
+            bytes[i] = (byte) x;            
+            x = x >> 8;                     
         }
 
         bytes[bytes.length - 1] = (byte) n;
@@ -284,10 +283,14 @@ public class KECCAK {
      * @param bytes the bytes to be printed
      */
     public static void print_bytes_hex(byte[] bytes) {
-        for (byte b : bytes) {
-            System.out.print(Integer.toHexString(b & 255 | 256).substring(1) + " ");
-        }
-        System.out.println();
+        System.out.println(bytes_to_hex(bytes));
+    }
+
+    public static String bytes_to_hex(byte[] bytes) {
+        StringBuilder sb = new StringBuilder();
+        for (byte b : bytes) 
+            sb.append(Integer.toHexString(b & 255 | 256).substring(1) + " ");
+        return sb.toString();
     }
 
     /**
