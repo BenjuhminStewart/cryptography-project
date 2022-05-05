@@ -14,7 +14,7 @@ public class Hash {
     public static void main(String[] args) {
 
         buildCommands();
-        System.out.println("Type \"help\" for more information");
+        System.out.println("Type \"help\" for more information or \"exit\" to exit the program");
         Scanner scan = new Scanner(System.in);
         while (true) {
             String input = "";
