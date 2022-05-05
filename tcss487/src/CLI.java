@@ -107,11 +107,10 @@ public class CLI {
     public static void unsupportedFunctions(String code) {
         // Colors (found from: https://www.w3schools.blog/ansi-colors-java)
         String errorColor = "\033[0;31m";
-        String warningColor = "\033[0;33m";
+        String warningColor = "\033[0;90m";
         String reset = "\u001B[0m";
-        System.out.printf("\n%sNF%s - %s[%s]%s: \"%s\" (*Non-Functional)\n\n", errorColor, reset,
-                warningColor, code, reset,
-                commands.get(code));
+        System.out.printf("\n%s*%s[%s]%s: \"%s\" (%s*Non-Functional%s)\n\n", warningColor, errorColor, code, reset,
+                commands.get(code), warningColor, reset);
     }
 
     public static void printHelp(String code) {
