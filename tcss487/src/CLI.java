@@ -195,10 +195,10 @@ public class CLI {
             System.out.println("\nSuccesfully Hashed Message to \"" + encryptionLocation + "\"\n");
 
         } catch (NoSuchFileException e) {
-            System.out.print("invalid input file");
+            System.out.print("\ninvalid input file\n");
         } catch (IOException e) {
             e.printStackTrace();
-            System.out.print("invalid command");
+            System.out.print("\ninvalid command\n");
             return;
         }
     }
