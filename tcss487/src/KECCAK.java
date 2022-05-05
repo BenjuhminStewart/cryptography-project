@@ -4,24 +4,24 @@
 public class KECCAK {
 
     private static final long[] KECCAKF_RNDC = {
-        0x0000000000000001L, 0x0000000000008082L, 0x800000000000808aL,
-        0x8000000080008000L, 0x000000000000808bL, 0x0000000080000001L,
-        0x8000000080008081L, 0x8000000000008009L, 0x000000000000008aL,
-        0x0000000000000088L, 0x0000000080008009L, 0x000000008000000aL,
-        0x000000008000808bL, 0x800000000000008bL, 0x8000000000008089L,
-        0x8000000000008003L, 0x8000000000008002L, 0x8000000000000080L,
-        0x000000000000800aL, 0x800000008000000aL, 0x8000000080008081L,
-        0x8000000000008080L, 0x0000000080000001L, 0x8000000080008008L
+            0x0000000000000001L, 0x0000000000008082L, 0x800000000000808aL,
+            0x8000000080008000L, 0x000000000000808bL, 0x0000000080000001L,
+            0x8000000080008081L, 0x8000000000008009L, 0x000000000000008aL,
+            0x0000000000000088L, 0x0000000080008009L, 0x000000008000000aL,
+            0x000000008000808bL, 0x800000000000008bL, 0x8000000000008089L,
+            0x8000000000008003L, 0x8000000000008002L, 0x8000000000000080L,
+            0x000000000000800aL, 0x800000008000000aL, 0x8000000080008081L,
+            0x8000000000008080L, 0x0000000080000001L, 0x8000000080008008L
     };
 
     private static final int[] KECCAKF_ROTC = {
-        1,  3,  6,  10, 15, 21, 28, 36, 45, 55, 2,  14,
-        27, 41, 56, 8,  25, 43, 62, 18, 39, 61, 20, 44
+            1, 3, 6, 10, 15, 21, 28, 36, 45, 55, 2, 14,
+            27, 41, 56, 8, 25, 43, 62, 18, 39, 61, 20, 44
     };
 
     private static final int[] KECCAKF_PILN = {
-        10, 7,  11, 17, 18, 3, 5,  16, 8,  21, 24, 4,
-        15, 23, 19, 13, 12, 2, 20, 14, 22, 9,  6,  1
+            10, 7, 11, 17, 18, 3, 5, 16, 8, 21, 24, 4,
+            15, 23, 19, 13, 12, 2, 20, 14, 22, 9, 6, 1
     };
 
     private static final int KECCAKF_ROUNDS = 24;
@@ -181,8 +181,8 @@ public class KECCAK {
 
         byte[] bytes = new byte[n + 1];
         for (int i = bytes.length - 1; i > 0; i--) {
-            bytes[i] = (byte) x;            
-            x = x >> 8;                     
+            bytes[i] = (byte) x;
+            x = x >> 8;
         }
 
         bytes[0] = (byte) n;
@@ -203,8 +203,8 @@ public class KECCAK {
 
         byte[] bytes = new byte[n + 1];
         for (int i = bytes.length - 2; i >= 0; i--) {
-            bytes[i] = (byte) x;            
-            x = x >> 8;                     
+            bytes[i] = (byte) x;
+            x = x >> 8;
         }
 
         bytes[bytes.length - 1] = (byte) n;
@@ -288,7 +288,7 @@ public class KECCAK {
 
     public static String bytes_to_hex(byte[] bytes) {
         StringBuilder sb = new StringBuilder();
-        for (byte b : bytes) 
+        for (byte b : bytes)
             sb.append(Integer.toHexString(b & 255 | 256).substring(1) + " ");
         return sb.toString();
     }
@@ -328,20 +328,21 @@ public class KECCAK {
      * @return the MAC tag
      */
     public static byte[] KMACXOF256(byte[] K, byte[] X, int L, byte[] S) {
-        byte[] new_x = concat_arrays(concat_arrays(bytepad(encode_string(K), 136), X), right_encode(L));
+        byte[] new_x = concat_arrays(concat_arrays(bytepad(encode_string(K), 136), X), right_encode(0));
         return CSHAKE256(new_x, L, "KMAC".getBytes(), S);
     }
 
-    public static void main(String[] args) {
-
-        int L = 512;
-        byte[] S = "My Tagged Application".getBytes();
-        byte[] X = new byte[] { 0, 1, 2, 3 };
-        byte[] K = new byte[] { 64, 65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80,
-                81, 82, 83, 84, 85, 86, 87, 88, 89, 90, 91, 92, 93, 94, 95 };
-
-        // key, data, length, cust string
-        byte[] bytes = KMACXOF256(K, X, L, S);
-        print_bytes_hex(bytes);
+    /**
+     * Encrypt input using KMACXOF256
+     * 
+     * @param K MAC key
+     * @param X input to be encrypted
+     * @param L output length (bits)
+     * @param S custom string
+     * @return the MAC tag
+     */
+    public static byte[] KMAC256(byte[] K, byte[] X, int L, byte[] S) {
+        byte[] new_x = concat_arrays(concat_arrays(bytepad(encode_string(K), 136), X), right_encode(L));
+        return CSHAKE256(new_x, L, "KMAC".getBytes(), S);
     }
 }
