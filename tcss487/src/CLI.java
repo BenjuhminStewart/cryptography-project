@@ -76,14 +76,12 @@ public class CLI {
         sb.append(
                 mainColor
                         + "----- Example 1:\n" + separator
-                        + "crypt > kmac C:/Users/Benjamin/Documents/message.txt\n\n" + separator
-                        + "In the scenario of two arguments, the file is automatically encrypted in the same root folder as the message with the name\n"
-                        + separator
-                        + "[message_name]-plainhash.txt\n\n");
+                        + "kmac C:/Users/Benjamin/Documents/message.txt\n\n" + separator
+                        + "In the scenario of two arguments, the file is automatically encrypted in the same root folder as the message with the name \"[message_name]-plainhash.txt\"\n\n");
         // Example 2
         sb.append(
                 "----- Example 2:\n" + separator
-                        + "kmac C:/Users/Benjamin/Documents/message.txt C:/Users/Benjamin/Encryptions/message-plainhash.txt\n\n"
+                        + "kmac C:/Users/Benjamin/Documents/message.txt C:/Users/Benjamin/encrypts/plainhash.txt\n\n"
                         + separator
                         + "In the scenario of 3 arguments, you can explicitly set the location of the message to be encrypted as well as the location of the output\n"
                         + separator
