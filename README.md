@@ -7,7 +7,7 @@ In order to run the application,
 2. copy the url
 3. Go back to terminal and run 
 ```zsh
-git clone ${URL}`
+git clone ${URL}
 cd cryptography-project
 cd tcss487
 cd src
