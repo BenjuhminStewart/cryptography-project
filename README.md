@@ -8,9 +8,9 @@ In order to run the application,
 3. Go back to terminal and run 
 ```powershell
 git clone https://github.com/BenjuhminStewart/cryptography-project.git
-Set-Location cryptography-project
-Set-Location tcss487
-Set-Location src
+cd cryptography-project
+cd tcss487
+cd src
 javac *.java
 java Hash.java
 ```
