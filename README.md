@@ -1,5 +1,8 @@
 # Hashing CLI Application
 
+**NOTE**: *As this is a public repository for a school project we ask that you never copy our code or promote it without credit to us and the university*.
+
+
 ## 🚀 Launching The Application
 
 In order to run the application, 
