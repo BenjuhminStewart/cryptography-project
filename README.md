@@ -6,7 +6,7 @@ In order to run the application,
 1. Open Terminal and Navigate to where you want to download this application
 2. copy the url
 3. Go back to terminal and run 
-```powershell
+```bash
 git clone https://github.com/BenjuhminStewart/cryptography-project.git
 cd cryptography-project
 cd tcss487
