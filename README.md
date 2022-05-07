@@ -4,7 +4,7 @@
 
 In order to run the application, 
 1. Open Terminal and Navigate to where you want to download this application
-3. Go back to terminal and run 
+3. Copy the following and paste it into your terminal and enjoy encrypting! :)
 ```bash
 git clone https://github.com/BenjuhminStewart/cryptography-project.git
 cd cryptography-project
