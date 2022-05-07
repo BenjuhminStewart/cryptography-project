@@ -6,11 +6,11 @@ In order to run the application,
 1. Open Terminal and Navigate to where you want to download this application
 2. copy the url
 3. Go back to terminal and run 
-```zsh
-git clone ${URL}
-cd cryptography-project
-cd tcss487
-cd src
+```powershell
+git clone https://github.com/BenjuhminStewart/cryptography-project.git
+Set-Location cryptography-project
+Set-Location tcss487
+Set-Location src
 javac *.java
 java Hash.java
 ```
