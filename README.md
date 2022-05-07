@@ -17,10 +17,6 @@ javac *.java
 java Hash.java
 ```
 
-## 🧐 Motivation
-
-Blake Hamilton and I are taking a cryptography class at the University of Washington that requires a hashing project
-
 ## 🔧 Features
 
 1. cSHAKE256
