@@ -1,3 +1,5 @@
+package services.kmac;
+
 /**
  * Implementation of the Keccak Core Algorithm.
  */
@@ -252,7 +254,7 @@ public class KECCAK {
      * @param arr2 second array
      * @return first array concatenated with second array (first || second)
      */
-    private static byte[] concat_arrays(byte[] arr1, byte[] arr2) {
+    public static byte[] concat_arrays(byte[] arr1, byte[] arr2) {
         byte[] bytes = new byte[arr1.length + arr2.length];
 
         System.arraycopy(arr1, 0, bytes, 0, arr1.length);
@@ -268,7 +270,7 @@ public class KECCAK {
      * @param b   byte to concatenate with array
      * @return byte concatenated with byte array
      */
-    private static byte[] concat_byte(byte[] arr, byte b) {
+    public static byte[] concat_byte(byte[] arr, byte b) {
         byte[] bytes = new byte[arr.length + 1];
 
         System.arraycopy(arr, 0, bytes, 0, arr.length);
