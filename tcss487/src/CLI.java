@@ -84,49 +84,10 @@ public class CLI {
             System.out.printf("--- %s[%s]%s - \"%s\"\n", commandColor, command, reset,
                     commands.get(command).getDescription());
         }
-        System.out.printf("--- %s[%s]%s - \"%s\"\n", commandColor, "help", reset, "List all command");
+        System.out.printf("--- %s[%s]%s - \"%s\"\n", commandColor, "help", reset, "List all commands");
         System.out.printf("--- %s[%s]%s - \"%s\"\n", commandColor, "exit", reset, "Exit the program");
         System.out.println();
     }
-
-    // public static void twoArgs(String[] args) {
-    // // arg length = 2, options are plain hash
-    // if (args.length == 2) {
-    // String command = args[0];
-    // if (command.equals("kmac")) {
-    // try {
-    // String src = args[1];
-    // String inputName = src.replace("\\", "/").substring(src.lastIndexOf("/"),
-    // src.lastIndexOf("."));
-    // String dest = src.replace("\\", "/").substring(0,
-    // src.lastIndexOf("/"))
-    // + inputName + "-" + "plainhash.txt";
-    // plainCryptographicHash(src, dest);
-    // } catch (Exception e) {
-    // printHelp(args[0]);
-    // }
-
-    // } else {
-    // printHelp(args[0]);
-    // }
-    // }
-    // }
-
-    // public static void threeArgs(String[] args) {
-    // String command = args[0];
-    // String messageLocation = args[1];
-    // String outputLocation = args[2];
-    // doFunction(command, messageLocation, outputLocation);
-    // }
-
-    // public static void doFunction(String code, String messageLocation, String
-    // outputLocation) {
-    // if (code.equals("kmac")) {
-    // plainCryptographicHash(messageLocation, outputLocation);
-    // } else {
-    // printHelp(code);
-    // }
-    // }
 
     public static byte[] readFileBytes(File file) throws IOException {
         return Files.readAllBytes(file.toPath());

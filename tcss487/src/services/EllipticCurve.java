@@ -71,18 +71,13 @@ public class EllipticCurve implements IService {
         byte[] ka = Arrays.copyOfRange(ke_ka, ke_ka.length / 2, ke_ka.length);
 
         // m = KMACXOF256(ke, “”, |c|, “PKE”)  c
-        byte[] m = KECCAK.KMACXOF256(ke, "".getBytes(), c.length * 8, "PKE".getBytes());
+        byte[] m = KECCAK.KMACXOF256(ke, "".getBytes(), gram.c.length * 8, "PKE".getBytes());
         byte[] t_prime = KECCAK.KMACXOF256(ka, m, 512, "PKA".getBytes());
 
-        try {
-            if (Arrays.equals(gram.t, t_prime)) {
+        return null;
 
-            } else {
-                help();
-            }
-        } catch (IOException e) {
-            help();
-        }
+        // if (Arrays.equals(gram.t, t_prime))
+
     }
 
     public Signature genSignature(byte[] m, byte[] pw) {
