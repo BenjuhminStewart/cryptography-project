@@ -14,6 +14,7 @@ import services.kmac.KECCAK;
 public class SymmetricCryptogram implements IService {
 
     private final String service = "Encrypt/Decrypt a file symmetrically using a passphrase.";
+    public final String name = "symm";
 
     public void encrypt(String path, byte[] m, byte[] pw) {
         // store 512 bits / 64 bytes of random data
@@ -95,7 +96,31 @@ public class SymmetricCryptogram implements IService {
     }
 
     public void help() {
-        System.out.println("HELP SYMM");
+        // Colors (found from: https://www.w3schools.blog/ansi-colors-java)
+        final String separator = "      ";
+        final String mainColor = "\033[0;37m";
+        final String RED = "\033[0;31m";
+        final String CYAN = "\033[0;36m";
+        final String commandColor = "\u001B[33m";
+        final String reset = "\u001B[0m";
+        StringBuilder sb = new StringBuilder();
+        // Header
+        sb.append(commandColor + "\n" + name + mainColor + " - " + service + "\n\n" + separator + CYAN
+                + " usage: symm ['-e' -> encrypt || '-d' -> decrypt] [file-path] [passphrase]" + "\n\n");
+        // Example 1
+        sb.append(
+                mainColor
+                        + separator + RED + " Example 1 [Encryption]:\n" + reset + separator
+                        + " symm -e C:/Users/Benjamin/Documents/message.txt 1234\n\n" + separator
+                        + " the file is automatically encrypted with passphrase '1234' as \"[message_name]-symm-encrypted.txt\"\n\n");
+        sb.append(
+                mainColor
+                        + separator + RED + " Example 1 [Encryption]:\n" + reset + separator
+                        + " symm -d C:/Users/Benjamin/Documents/message-symm-encrypted.txt 1234\n\n" + separator
+                        + " the file is automatically decrypted using passphrase '1234' as \"[message_name]-symm-decrypted.txt\"\n");
+        // Reset Console Color
+        sb.append(reset);
+        System.out.println(sb.toString());
     }
 
     public String getDescription() {

@@ -87,7 +87,7 @@ public class KMAC implements IService {
             System.out.println(
                     "\nSuccesfully Hashed Message to \"" + encryptionLocation + "\"\n" + "Using KMACXOF256 encryption");
         } catch (NoSuchFileException e) {
-            System.out.print("\ninvalid input file\n");
+            System.out.print("\ninvalid file\n");
         } catch (IOException e) {
             e.printStackTrace();
             System.out.print("\ninvalid command\n");
