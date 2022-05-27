@@ -23,7 +23,9 @@ import services.kmac.KECCAK;
 public class EllipticCurve implements IService {
 
     public static final BigInteger prime = BigInteger.valueOf(2).pow(521).subtract(BigInteger.valueOf(1));
-    public static final Point G = new Point(BigInteger.valueOf(4), BigInteger.valueOf(2));
+
+    public static final Point G = new Point(BigInteger.valueOf(4), false);
+
     public static final BigInteger r = BigInteger.valueOf(2).pow(519).subtract(
             new BigInteger("337554763258501705789107630418782636071904961214051226618635150085779108655765"));
     public static final BigInteger n = BigInteger.valueOf(4).multiply(r);
@@ -76,10 +78,9 @@ public class EllipticCurve implements IService {
                 System.out.println("\nInvalid password\n");
             } else {
                 write(dest, m);
-                System.out.println("Successfully written to " + dest.getAbsolutePath());
+                System.out.println("\nSuccessfully written to " + dest.getAbsolutePath() + "\n");
             }
         } catch (IOException | ClassNotFoundException e) {
-            System.out.println("bad");
             help();
         }
     }
@@ -103,7 +104,6 @@ public class EllipticCurve implements IService {
 
         // c = KMACXOF256(ke, "", |m|, "PKE") XOR m
         byte[] c = KECCAK.KMACXOF256(ke, "".getBytes(), m.length * 8, "PKE".getBytes());
-        System.out.println("LENGTHS C:M => " + c.length + " " + m.length);
         for (int i = 0; i < m.length; i++)
             c[i] ^= m[i];
 
@@ -132,9 +132,6 @@ public class EllipticCurve implements IService {
             m[i] ^= gram.c[i];
 
         byte[] t_prime = KECCAK.KMACXOF256(ka, m, 512, "PKA".getBytes());
-
-        System.out.println("\nT_PRIME: " + KECCAK.bytes_to_hex(t_prime));
-        System.out.println("\nGRAM.T: " + KECCAK.bytes_to_hex(gram.t));
 
         return Arrays.equals(gram.t, t_prime) ? m : null;
 
@@ -255,27 +252,6 @@ public class EllipticCurve implements IService {
         }
     }
 
-    /**
-     * Compute a square root of v mod p with a specified least significant bit, if
-     * such a root exists.
-     *
-     * @param v   the radicand.
-     * @param p   the modulus (must satisfy p mod 4 = 3).
-     * @param lsb desired least significant bit (true: 1, false: 0).
-     * @return a square root r of v mod p with r mod 2 = 1 iff lsb = true
-     *         if such a root exists, otherwise null.
-     */
-    public static BigInteger sqrt(BigInteger v, BigInteger p, boolean lsb) {
-        assert (p.testBit(0) && p.testBit(1)); // p = 3 (mod 4)
-        if (v.signum() == 0) {
-            return BigInteger.ZERO;
-        }
-        BigInteger r = v.modPow(p.shiftRight(2).add(BigInteger.ONE), p);
-        if (r.testBit(0) != lsb) {
-            r = p.subtract(r); // correct the lsb
-        }
-        return (r.multiply(r).subtract(v).mod(p).signum() == 0) ? r : null;
-    }
 }
 
 class Point implements Serializable {
@@ -291,6 +267,19 @@ class Point implements Serializable {
     public Point(BigInteger x, BigInteger y) {
         this.x = x;
         this.y = y;
+    }
+
+    public Point(BigInteger x, boolean lsb) {
+        this.x = x;
+
+        // y = +- sqrt((1 - x^2) / (1 + 376014x^2) mod p)
+
+        BigInteger x_2 = x.pow(2).mod(prime);
+        BigInteger num = BigInteger.ONE.subtract(x_2);
+
+        BigInteger denom = BigInteger.ONE.add(BigInteger.valueOf(376014).multiply(x_2).mod(prime));
+
+        this.y = sqrt(num.multiply(denom.modInverse(prime)), prime, lsb);
     }
 
     public Point(Point p) {
@@ -387,6 +376,28 @@ class Point implements Serializable {
         input.close();
 
         return pubkey;
+    }
+
+    /**
+     * Compute a square root of v mod p with a specified least significant bit, if
+     * such a root exists.
+     *
+     * @param v   the radicand.
+     * @param p   the modulus (must satisfy p mod 4 = 3).
+     * @param lsb desired least significant bit (true: 1, false: 0).
+     * @return a square root r of v mod p with r mod 2 = 1 iff lsb = true
+     *         if such a root exists, otherwise null.
+     */
+    public BigInteger sqrt(BigInteger v, BigInteger p, boolean lsb) {
+        assert (p.testBit(0) && p.testBit(1)); // p = 3 (mod 4)
+        if (v.signum() == 0) {
+            return BigInteger.ZERO;
+        }
+        BigInteger r = v.modPow(p.shiftRight(2).add(BigInteger.ONE), p);
+        if (r.testBit(0) != lsb) {
+            r = p.subtract(r); // correct the lsb
+        }
+        return (r.multiply(r).subtract(v).mod(p).signum() == 0) ? r : null;
     }
 
 }
