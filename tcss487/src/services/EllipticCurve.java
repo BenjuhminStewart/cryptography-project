@@ -21,6 +21,8 @@ import services.kmac.KECCAK;
  * @author Paulo Baretto
  */
 public class EllipticCurve implements IService {
+    private final String name = "ec";
+    private final String service = "Elliptic Curve Functions";
 
     public static final BigInteger prime = BigInteger.valueOf(2).pow(521).subtract(BigInteger.valueOf(1));
 
@@ -41,8 +43,10 @@ public class EllipticCurve implements IService {
 
         try {
             pair.writePublicKey(dest);
+            System.out.println(
+                    "\nSuccessfully created key at location -> " + "\033[0;32m" + dest.getAbsolutePath() + "\n");
         } catch (IOException e) {
-            System.out.println("Unable to write public key to file");
+            System.out.println("\033[0;31m" + "\nUnable to write public key to file! Probably incorrect path...\n");
             help();
         }
         return pair;
@@ -168,7 +172,30 @@ public class EllipticCurve implements IService {
     }
 
     public void help() {
-        System.out.println("\n" + "Elliptic Curve Help".toUpperCase() + "\n");
+        // Colors (found from: https://www.w3schools.blog/ansi-colors-java)
+        final String mainColor = "\033[0;37m";
+        final String GREEN = "\033[0;32m";
+        final String CYAN = "\033[0;36m";
+        final String commandColor = "\u001B[33m";
+        final String reset = "\u001B[0m";
+        StringBuilder sb = new StringBuilder();
+        // Header
+        System.out.printf("\n%s[%s]%s - %s\n\n", commandColor, name, mainColor, service);
+        // -k flag
+        System.out.printf("\t%s-k%s -> generate a schnorr key pair from a passphrase\n", CYAN, reset);
+        System.out.printf("\t      %sExample: ec -p password ~/.../test-key.txt%s\n\n", GREEN, reset);
+        // -e flag
+        System.out.printf("\t%s-e%s -> encrypt a byte array under the schnorr public key\n", CYAN, reset);
+        System.out.printf("\t      %sExample: ec -e ~/.../message.txt ~/.../test-key.txt%s\n\n", GREEN, reset);
+        // -d flag
+        System.out.printf("\t%s-d%s -> decrypt a cryptogram under a passphrase\n", CYAN, reset);
+        System.out.printf("\t      %sExample: ec -d ~/.../encrypted-message.txt password%s\n\n", GREEN, reset);
+        // -s flag
+        System.out.printf("\t%s-s%s -> generate a signature for a byte array under a passphrase\n", CYAN, reset);
+        System.out.printf("\t      %sNONE\n\n%s", GREEN, reset);
+        // -v flag
+        System.out.printf("\t%s-v%s -> verify a signature for a byte array under a public key\n", CYAN, reset);
+        System.out.printf("\t      %sNONE\n\n%s", GREEN, reset);
     }
 
     public String getDescription() {
@@ -183,11 +210,11 @@ public class EllipticCurve implements IService {
         }
         // flags:
 
-        // -p -> elliptic key pair
-        if (cmds[1].equals("-p")) {
+        // -k -> elliptic key pair
+        if (cmds[1].equals("-k")) {
             // arguments for an elliptic key pair => passphrase location
-            // usage -> ec -p [password] [location to write to]
-            // example -> ec -p 1234 C:\Users\...\new_key_location.txt
+            // usage -> ec -k [password] [location to write to]
+            // example -> ec -k 1234 C:\Users\...\new_key_location.txt
             if (cmds.length != 4) {
                 help();
                 return;
