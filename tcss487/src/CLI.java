@@ -1,13 +1,13 @@
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
-import java.nio.file.NoSuchFileException;
 import java.util.HashMap;
 import java.util.Scanner;
 
 import services.AuthenticationTag;
 import services.IService;
 import services.SymmetricCryptogram;
+import services.EllipticCurve;
 import services.kmac.KMAC;
 
 public class CLI {
@@ -50,6 +50,7 @@ public class CLI {
         commands.put("kmac", new KMAC());
         commands.put("auth", new AuthenticationTag());
         commands.put("symm", new SymmetricCryptogram());
+        commands.put("ec", new EllipticCurve());
         // commands.put("dsc", "Decrypt symmetric cryptogram under passphrase");
         // commands.put("gen-schnorr", "Generate Schnorr key pair from passphrase");
         // commands.put("schnorr", "Encrypt byte[] under Schnorr public key");

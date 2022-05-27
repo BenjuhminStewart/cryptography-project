@@ -1,7 +1,15 @@
 package services;
 
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
+import java.io.Serializable;
 import java.math.BigInteger;
+import java.nio.file.Files;
 import java.security.SecureRandom;
 import java.util.Arrays;
 
@@ -15,18 +23,65 @@ import services.kmac.KECCAK;
 public class EllipticCurve implements IService {
 
     public static final BigInteger prime = BigInteger.valueOf(2).pow(521).subtract(BigInteger.valueOf(1));
-    public static final Point G = new Point(BigInteger.valueOf(2), BigInteger.valueOf(8));
+    public static final Point G = new Point(BigInteger.valueOf(4), BigInteger.valueOf(2));
     public static final BigInteger r = BigInteger.valueOf(2).pow(519).subtract(
             new BigInteger("337554763258501705789107630418782636071904961214051226618635150085779108655765"));
     public static final BigInteger n = BigInteger.valueOf(4).multiply(r);
 
-    public KeyPair generateKeyPair(byte[] pw) {
+    // Generate an elliptic key pair from a given passphrase and write the public
+    // key to a file.
+    public KeyPair generateKeyPair(byte[] pw, File dest) {
         byte[] s_bytes = KECCAK.KMACXOF256(pw, "".getBytes(), 512, "K".getBytes());
         BigInteger s = new BigInteger(s_bytes).multiply(BigInteger.valueOf(4));
         Point V = G.multiply(s);
 
-        // TODO: write V to file somehow
-        return new KeyPair(s, V);
+        KeyPair pair = new KeyPair(s, V);
+
+        try {
+            pair.writePublicKey(dest);
+        } catch (IOException e) {
+            System.out.println("Unable to write public key to file");
+            help();
+        }
+        return pair;
+    }
+
+    public void encrypt(File data, File key, File dest) {
+        Point pubkey;
+        try {
+            pubkey = Point.readPublicKey(key);
+        } catch (Exception e) {
+            System.out.println("Invalid public key.");
+            help();
+            return;
+        }
+
+        try {
+            byte[] m = Files.readAllBytes(data.toPath());
+            Cryptogram zct = schnorrEncrypt(m, pubkey);
+            zct.writeCryptogram(dest);
+        } catch (Exception e) {
+            e.printStackTrace();
+            System.out.println("Invalid data, key, or dest ?");
+        }
+    }
+
+    public void decrypt(File data, byte[] pw, File dest) {
+        try {
+            Cryptogram gram = Cryptogram.readCryptogram(data);
+            byte[] m = schnorrDecrypt(gram, pw);
+
+            // invalid password
+            if (m == null) {
+                System.out.println("\nInvalid password\n");
+            } else {
+                write(dest, m);
+                System.out.println("Successfully written to " + dest.getAbsolutePath());
+            }
+        } catch (IOException | ClassNotFoundException e) {
+            System.out.println("bad");
+            help();
+        }
     }
 
     public Cryptogram schnorrEncrypt(byte[] m, Point V) {
@@ -41,23 +96,24 @@ public class EllipticCurve implements IService {
         Point W = V.multiply(k);
         Point Z = G.multiply(k);
 
-        // (ke || ka) = KMACXOF256(Wx, “”, 1024, “P”)
+        // (ke || ka) = KMACXOF256(Wx, "", 1024, "P")
         byte[] ke_ka = KECCAK.KMACXOF256(W.x.toByteArray(), "".getBytes(), 1024, "P".getBytes());
         byte[] ke = Arrays.copyOfRange(ke_ka, 0, ke_ka.length / 2);
         byte[] ka = Arrays.copyOfRange(ke_ka, ke_ka.length / 2, ke_ka.length);
 
-        // c = KMACXOF256(ke, “”, |m|, “PKE”) XOR m
+        // c = KMACXOF256(ke, "", |m|, "PKE") XOR m
         byte[] c = KECCAK.KMACXOF256(ke, "".getBytes(), m.length * 8, "PKE".getBytes());
+        System.out.println("LENGTHS C:M => " + c.length + " " + m.length);
         for (int i = 0; i < m.length; i++)
             c[i] ^= m[i];
 
-        // t = KMACXOF256(ka, m, 512, “PKA”)
+        // t = KMACXOF256(ka, m, 512, "PKA")
         byte[] t = KECCAK.KMACXOF256(ka, m, 512, "PKA".getBytes());
         return new Cryptogram(Z, c, t);
     }
 
-    public Cryptogram schnorrDecrypt(Cryptogram gram, byte[] pw) {
-        // s = KMACXOF256(pw, “”, 512, “K”); s = 4s
+    public byte[] schnorrDecrypt(Cryptogram gram, byte[] pw) {
+        // s = KMACXOF256(pw, "", 512, "K"); s = 4s
         byte[] s_bytes = KECCAK.KMACXOF256(pw, "".getBytes(), 512, "K".getBytes());
         BigInteger s = new BigInteger(s_bytes);
         s = s.multiply(BigInteger.valueOf(4));
@@ -65,18 +121,22 @@ public class EllipticCurve implements IService {
         // W = s*Z
         Point W = gram.Z.multiply(s);
 
-        // (ke || ka) = KMACXOF256(Wx, “”, 1024, “P”)
+        // (ke || ka) = KMACXOF256(Wx, "", 1024, "P")
         byte[] ke_ka = KECCAK.KMACXOF256(W.x.toByteArray(), "".getBytes(), 1024, "P".getBytes());
         byte[] ke = Arrays.copyOfRange(ke_ka, 0, ke_ka.length / 2);
         byte[] ka = Arrays.copyOfRange(ke_ka, ke_ka.length / 2, ke_ka.length);
 
-        // m = KMACXOF256(ke, “”, |c|, “PKE”)  c
+        // m = KMACXOF256(ke, "", |c|, "PKE") XOR c
         byte[] m = KECCAK.KMACXOF256(ke, "".getBytes(), gram.c.length * 8, "PKE".getBytes());
+        for (int i = 0; i < m.length; i++)
+            m[i] ^= gram.c[i];
+
         byte[] t_prime = KECCAK.KMACXOF256(ka, m, 512, "PKA".getBytes());
 
-        return null;
+        System.out.println("\nT_PRIME: " + KECCAK.bytes_to_hex(t_prime));
+        System.out.println("\nGRAM.T: " + KECCAK.bytes_to_hex(gram.t));
 
-        // if (Arrays.equals(gram.t, t_prime))
+        return Arrays.equals(gram.t, t_prime) ? m : null;
 
     }
 
@@ -111,7 +171,7 @@ public class EllipticCurve implements IService {
     }
 
     public void help() {
-
+        System.out.println("\n" + "Elliptic Curve Help".toUpperCase() + "\n");
     }
 
     public String getDescription() {
@@ -119,7 +179,80 @@ public class EllipticCurve implements IService {
     }
 
     public void parse(String[] cmds) {
+        // base command: 'ec'
+        if (cmds.length == 1) {
+            help();
+            return;
+        }
+        // flags:
 
+        // -p -> elliptic key pair
+        if (cmds[1].equals("-p")) {
+            // arguments for an elliptic key pair => passphrase location
+            // usage -> ec -p [password] [location to write to]
+            // example -> ec -p 1234 C:\Users\...\new_key_location.txt
+            if (cmds.length != 4) {
+                help();
+                return;
+            }
+            byte[] password = cmds[2].getBytes();
+            File file = new File(cmds[3]);
+
+            generateKeyPair(password, file);
+            return;
+        }
+
+        // -e -> elliptic curve encryption under a given public key file
+        else if (cmds[1].equals("-e")) {
+            // arguments for ec encryption => file to encrypt, public key file, destination
+            // (will be sent to same location as public key file)
+            // usage -> ec -e [file to encrypt] [public key file]
+            // example -> ec -e C:\Users\...\message.txt C:\Users\...\pk.txt
+            if (cmds.length != 4) {
+                help();
+                return;
+            }
+
+            File data = new File(cmds[2]);
+            File key = new File(cmds[3]);
+            File dest = new File(getDefaultDestination(cmds[2], "ec-encrypted"));
+            encrypt(data, key, dest);
+            return;
+        }
+        // -d -> elliptic curve decryption given an ec encrypted file and a password
+        else if (cmds[1].equals("-d")) {
+            // arguments for ec decryption => encrypted file and a pw
+            // usage -> ec -d [encrypted file] [password]
+            // example -> ec -d C:\Users\...\ec.txt 1234
+
+            if (cmds.length != 4) {
+                help();
+                return;
+            }
+
+            File data = new File(cmds[2]);
+            File dest = new File(getDefaultDestination(cmds[2], "ec-decrypted"));
+            byte[] pw = cmds[3].getBytes();
+            decrypt(data, pw, dest);
+        }
+
+        // -s -> sign a given password and write the signature to a file
+        else if (cmds[1].equals("-s")) {
+            // arguments for ec signing => file and a pw
+            // usage -> ec -s [file] [password]
+            // example -> ec -s C:\Users\...\file.txt 1234
+        }
+        // -v -> verify a given data file and its signature under a public key
+        else if (cmds[1].equals("-v")) {
+            // arguments for ec verification => data file and its signature
+            // usage -> ec -s [data file] [signature]
+            // example -> es -d C:\Users\...\df.txt C:\Users\...\sig.txt
+        }
+
+        // not a valid sub command
+        else {
+            help();
+        }
     }
 
     /**
@@ -145,7 +278,9 @@ public class EllipticCurve implements IService {
     }
 }
 
-class Point {
+class Point implements Serializable {
+
+    private static final long serialVersionUID = 1L;
 
     public static final BigInteger d = BigInteger.valueOf(-376014);
     public static final BigInteger prime = BigInteger.valueOf(2).pow(521).subtract(BigInteger.valueOf(1));
@@ -231,6 +366,29 @@ class Point {
         System.out.printf("(x: %s, y: %s)", this.x.toString(10), this.y.toString(10));
     }
 
+    // https://mkyong.com/java/how-to-read-and-write-java-object-to-a-file/
+    public void writePublicKey(File file) throws FileNotFoundException, IOException {
+        FileOutputStream stream = new FileOutputStream(file);
+        ObjectOutputStream output = new ObjectOutputStream(stream);
+
+        output.writeObject(this);
+
+        stream.close();
+        output.close();
+    }
+
+    public static Point readPublicKey(File file) throws FileNotFoundException, IOException, ClassNotFoundException {
+        FileInputStream stream = new FileInputStream(file);
+        ObjectInputStream input = new ObjectInputStream(stream);
+
+        Point pubkey = (Point) input.readObject();
+
+        stream.close();
+        input.close();
+
+        return pubkey;
+    }
+
 }
 
 class KeyPair {
@@ -242,9 +400,36 @@ class KeyPair {
         this.s = s;
         this.V = V;
     }
+
+    // https://mkyong.com/java/how-to-read-and-write-java-object-to-a-file/
+    public void writePublicKey(File file) throws FileNotFoundException, IOException {
+        FileOutputStream stream = new FileOutputStream(file);
+        ObjectOutputStream output = new ObjectOutputStream(stream);
+
+        output.writeObject(this.V);
+
+        stream.close();
+        output.close();
+    }
+
+    public static Point readPublicKey(File file) throws FileNotFoundException, IOException, ClassNotFoundException {
+        FileInputStream stream = new FileInputStream(file);
+        ObjectInputStream input = new ObjectInputStream(stream);
+
+        Point pubkey = (Point) input.readObject();
+
+        stream.close();
+        input.close();
+
+        return pubkey;
+    }
+
 }
 
-class Cryptogram {
+class Cryptogram implements Serializable {
+
+    private static final long serialVersionUID = 1L;
+
     Point Z;
     byte[] c, t;
 
@@ -253,14 +438,73 @@ class Cryptogram {
         this.c = c;
         this.t = t;
     }
+
+    public boolean equals(Cryptogram crypt) {
+        if (this == crypt) {
+            return true;
+        } else if (Arrays.equals(c, crypt.c) && Arrays.equals(t, crypt.t) && crypt.Z.equals(Z)) {
+            return true;
+        } else {
+            return false;
+        }
+    }
+
+    public void writeCryptogram(File file) throws IOException {
+        FileOutputStream stream = new FileOutputStream(file);
+        ObjectOutputStream output = new ObjectOutputStream(stream);
+
+        output.writeObject(this);
+
+        stream.close();
+        output.close();
+    }
+
+    public static Cryptogram readCryptogram(File file)
+            throws FileNotFoundException, IOException, ClassNotFoundException {
+        FileInputStream stream = new FileInputStream(file);
+        ObjectInputStream input = new ObjectInputStream(stream);
+
+        Cryptogram gram = (Cryptogram) input.readObject();
+
+        stream.close();
+        input.close();
+
+        return gram;
+    }
 }
 
-class Signature {
+class Signature implements Serializable {
+
+    private static final long serialVersionUID = 1L;
+
     byte[] h;
     BigInteger z;
 
     public Signature(byte[] h, BigInteger z) {
         this.h = h;
         this.z = z;
+    }
+
+    // https://mkyong.com/java/how-to-read-and-write-java-object-to-a-file/
+    public void writeSignature(File file) throws FileNotFoundException, IOException {
+        FileOutputStream stream = new FileOutputStream(file);
+        ObjectOutputStream output = new ObjectOutputStream(stream);
+
+        output.writeObject(this);
+
+        stream.close();
+        output.close();
+    }
+
+    public static Signature readSignature(File file) throws FileNotFoundException, IOException, ClassNotFoundException {
+        FileInputStream stream = new FileInputStream(file);
+        ObjectInputStream input = new ObjectInputStream(stream);
+
+        Signature sig = (Signature) input.readObject();
+
+        stream.close();
+        input.close();
+
+        return sig;
     }
 }
