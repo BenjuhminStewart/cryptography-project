@@ -32,11 +32,18 @@ public class EllipticCurve implements IService {
             new BigInteger("337554763258501705789107630418782636071904961214051226618635150085779108655765"));
     public static final BigInteger n = BigInteger.valueOf(4).multiply(r);
 
+    private byte[] prependZero(byte[] original) {
+        byte[] zerobyte = new byte[1];
+        byte[] bytes = new byte[original.length + 1];
+        bytes = KECCAK.concat_arrays(zerobyte, original);
+        return bytes;
+    }
+
     // Generate an elliptic key pair from a given passphrase and write the public
     // key to a file.
     public KeyPair generateKeyPair(byte[] pw, File dest) {
         byte[] s_bytes = KECCAK.KMACXOF256(pw, "".getBytes(), 512, "K".getBytes());
-        BigInteger s = new BigInteger(s_bytes).multiply(BigInteger.valueOf(4));
+        BigInteger s = new BigInteger(prependZero(s_bytes)).multiply(BigInteger.valueOf(4));
         Point V = G.multiply(s);
 
         KeyPair pair = new KeyPair(s, V);
@@ -97,7 +104,7 @@ public class EllipticCurve implements IService {
         byte[] k_bytes = new byte[64];
         rand.nextBytes(k_bytes);
 
-        BigInteger k = new BigInteger(k_bytes);
+        BigInteger k = new BigInteger(prependZero(k_bytes));
         k = k.multiply(BigInteger.valueOf(4));
 
         Point W = V.multiply(k);
@@ -121,7 +128,7 @@ public class EllipticCurve implements IService {
     public byte[] schnorrDecrypt(Cryptogram gram, byte[] pw) {
         // s = KMACXOF256(pw, "", 512, "K"); s = 4s
         byte[] s_bytes = KECCAK.KMACXOF256(pw, "".getBytes(), 512, "K".getBytes());
-        BigInteger s = new BigInteger(s_bytes);
+        BigInteger s = new BigInteger(prependZero(s_bytes));
         s = s.multiply(BigInteger.valueOf(4));
 
         // W = s*Z
@@ -158,12 +165,12 @@ public class EllipticCurve implements IService {
     private Signature generateSignature(byte[] m, byte[] pw) {
         // set s
         byte[] s_bytes = KECCAK.KMACXOF256(pw, "".getBytes(), 512, "K".getBytes());
-        BigInteger s = new BigInteger(s_bytes);
+        BigInteger s = new BigInteger(prependZero(s_bytes));
         s = s.multiply(BigInteger.valueOf(4));
 
         // set k
         byte[] k_bytes = KECCAK.KMACXOF256(s.toByteArray(), m, 512, "N".getBytes());
-        BigInteger k = new BigInteger(k_bytes);
+        BigInteger k = new BigInteger(prependZero(k_bytes));
         k = k.multiply(BigInteger.valueOf(4));
 
         // set U
@@ -171,7 +178,7 @@ public class EllipticCurve implements IService {
 
         // set h
         byte[] h_bytes = KECCAK.KMACXOF256(U.x.toByteArray(), m, 512, "T".getBytes());
-        BigInteger h = new BigInteger(s_bytes);
+        BigInteger h = new BigInteger(prependZero(s_bytes));
 
         // set z
         BigInteger z = (k.subtract(h.multiply(s))).mod(r);
@@ -189,14 +196,14 @@ public class EllipticCurve implements IService {
         } catch (ClassNotFoundException | IOException e) {
             help();
         }
-
     }
 
     public boolean isValidSignature(Signature sig, byte[] m, Point V) {
-        Point U = (G.multiply(sig.z)).add(V.multiply(new BigInteger(sig.h)));
+        Point U = (G.multiply(sig.z)).add(V.multiply(new BigInteger(prependZero(sig.h))));
         byte[] h_prime = KECCAK.KMACXOF256(U.x.toByteArray(), m, 512, "T".getBytes());
-        KECCAK.print_bytes_hex(sig.h);
-        KECCAK.print_bytes_hex(h_prime);
+        System.out.println(KECCAK.bytes_to_hex(sig.h));
+        System.out.println();
+        System.out.println(KECCAK.bytes_to_hex(h_prime));
         return Arrays.equals(sig.h, h_prime);
     }
 
