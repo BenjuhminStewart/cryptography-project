@@ -75,7 +75,7 @@ public class SymmetricCryptogram implements IService {
                 write(file, m);
                 printSuccessfulEncryption(dest);
             } else {
-                System.out.println("Incorrect password! ");
+                System.out.println("\nIncorrect password! \n");
                 help();
             }
         } catch (IOException e) {
