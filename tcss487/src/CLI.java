@@ -51,13 +51,6 @@ public class CLI {
         commands.put("auth", new AuthenticationTag());
         commands.put("symm", new SymmetricCryptogram());
         commands.put("ec", new EllipticCurve());
-        // commands.put("dsc", "Decrypt symmetric cryptogram under passphrase");
-        // commands.put("gen-schnorr", "Generate Schnorr key pair from passphrase");
-        // commands.put("schnorr", "Encrypt byte[] under Schnorr public key");
-        // commands.put("dc", "Decrypt a cryptogram under passphrase");
-        // commands.put("gensig", "Generate signature for byte[] under passphrase");
-        // commands.put("versig", "Verify a signature for byte[] under Schnorr public
-        // key");
     }
 
     private static String getCommands() {
@@ -82,8 +75,15 @@ public class CLI {
         String reset = "\u001B[0m";
         System.out.println("\nsupported commands: " + getCommands() + "\n");
         for (String command : commands.keySet()) {
-            System.out.printf("--- %s[%s]%s - \"%s\"\n", commandColor, command, reset,
+            int commandLength = command.length();
+            int spacing = 4 - commandLength;
+            String spacingStr = "";
+            for (int i = 0; i < spacing; i++)
+                spacingStr += " ";
+
+            System.out.printf("--- %s[%s]%s %s- \"%s\"\n", commandColor, command, reset, spacingStr,
                     commands.get(command).getDescription());
+
         }
         System.out.printf("--- %s[%s]%s - \"%s\"\n", commandColor, "help", reset, "List all commands");
         System.out.printf("--- %s[%s]%s - \"%s\"\n", commandColor, "exit", reset, "Exit the program");

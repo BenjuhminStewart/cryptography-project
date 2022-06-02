@@ -22,7 +22,7 @@ import services.kmac.KECCAK;
  */
 public class EllipticCurve implements IService {
     private final String name = "ec";
-    private final String service = "Elliptic Curve Functions";
+    private final String service = "Elliptic curve functions";
 
     public static final BigInteger prime = BigInteger.valueOf(2).pow(521).subtract(BigInteger.valueOf(1));
 
@@ -44,9 +44,11 @@ public class EllipticCurve implements IService {
         try {
             pair.writePublicKey(dest);
             System.out.println(
-                    "\nSuccessfully created key at location -> " + "\033[0;32m" + dest.getAbsolutePath() + "\n");
+                    "\nSuccessfully created key at location -> " + "\033[0;32m" + dest.getAbsolutePath() + "\n"
+                            + "\u001B[0m");
         } catch (IOException e) {
-            System.out.println("\033[0;31m" + "\nUnable to write public key to file! Probably incorrect path...\n");
+            System.out.println(
+                    "\033[0;31m" + "\nUnable to write public key to file! Probably incorrect path...\n" + "\u001B[0m");
             help();
         }
         return pair;
@@ -141,7 +143,19 @@ public class EllipticCurve implements IService {
 
     }
 
-    public Signature genSignature(byte[] m, byte[] pw) {
+    public void generateSignature(File src, File dest, byte[] pw) {
+        try {
+            byte[] m = Files.readAllBytes(src.toPath());
+            Signature sig = generateSignature(m, pw);
+            sig.writeSignature(dest);
+        } catch (IOException e) {
+            System.out.println("Error generating signature");
+            help();
+        }
+
+    }
+
+    private Signature generateSignature(byte[] m, byte[] pw) {
         // set s
         byte[] s_bytes = KECCAK.KMACXOF256(pw, "".getBytes(), 512, "K".getBytes());
         BigInteger s = new BigInteger(s_bytes);
@@ -165,9 +179,24 @@ public class EllipticCurve implements IService {
         return new Signature(h_bytes, z);
     }
 
+    public void verifySignature(File src, File sig, File key) {
+        try {
+            Signature signature = Signature.readSignature(sig);
+            Point V = KeyPair.readPublicKey(key);
+            byte[] m = Files.readAllBytes(src.toPath());
+            System.out.println(
+                    isValidSignature(signature, m, V) ? "\nSignature IS valid!\n" : "\nSignature ISN'T valid!\n");
+        } catch (ClassNotFoundException | IOException e) {
+            help();
+        }
+
+    }
+
     public boolean isValidSignature(Signature sig, byte[] m, Point V) {
         Point U = (G.multiply(sig.z)).add(V.multiply(new BigInteger(sig.h)));
         byte[] h_prime = KECCAK.KMACXOF256(U.x.toByteArray(), m, 512, "T".getBytes());
+        KECCAK.print_bytes_hex(sig.h);
+        KECCAK.print_bytes_hex(h_prime);
         return Arrays.equals(sig.h, h_prime);
     }
 
@@ -183,7 +212,7 @@ public class EllipticCurve implements IService {
         System.out.printf("\n%s[%s]%s - %s\n\n", commandColor, name, mainColor, service);
         // -k flag
         System.out.printf("\t%s-k%s -> generate a schnorr key pair from a passphrase\n", CYAN, reset);
-        System.out.printf("\t      %sExample: ec -p password ~/.../test-key.txt%s\n\n", GREEN, reset);
+        System.out.printf("\t      %sExample: ec -k password ~/.../test-key.txt%s\n\n", GREEN, reset);
         // -e flag
         System.out.printf("\t%s-e%s -> encrypt a byte array under the schnorr public key\n", CYAN, reset);
         System.out.printf("\t      %sExample: ec -e ~/.../message.txt ~/.../test-key.txt%s\n\n", GREEN, reset);
@@ -192,14 +221,15 @@ public class EllipticCurve implements IService {
         System.out.printf("\t      %sExample: ec -d ~/.../encrypted-message.txt password%s\n\n", GREEN, reset);
         // -s flag
         System.out.printf("\t%s-s%s -> generate a signature for a byte array under a passphrase\n", CYAN, reset);
-        System.out.printf("\t      %sNONE\n\n%s", GREEN, reset);
+        System.out.printf("\t      %sExample: ec -s ~/.../message.txt password\n\n%s", GREEN, reset);
         // -v flag
         System.out.printf("\t%s-v%s -> verify a signature for a byte array under a public key\n", CYAN, reset);
-        System.out.printf("\t      %sNONE\n\n%s", GREEN, reset);
+        System.out.printf("\t      %sExample: ec -v ~/.../message.txt ~/.../signature.txt ~/.../key.txt\n\n%s", GREEN,
+                reset);
     }
 
     public String getDescription() {
-        return null;
+        return this.service;
     }
 
     public void parse(String[] cmds) {
@@ -265,12 +295,21 @@ public class EllipticCurve implements IService {
             // arguments for ec signing => file and a pw
             // usage -> ec -s [file] [password]
             // example -> ec -s C:\Users\...\file.txt 1234
+            File message = new File(cmds[2]);
+            File dest = new File(getDefaultDestination(cmds[2], "sig"));
+            byte[] pw = cmds[3].getBytes();
+            generateSignature(message, dest, pw);
         }
         // -v -> verify a given data file and its signature under a public key
         else if (cmds[1].equals("-v")) {
             // arguments for ec verification => data file and its signature
-            // usage -> ec -s [data file] [signature]
+            // usage -> ec -s [data file] [signature file] [key file]
             // example -> es -d C:\Users\...\df.txt C:\Users\...\sig.txt
+            File message = new File(cmds[2]);
+            File sig = new File(cmds[3]);
+            File key = new File(cmds[4]);
+
+            verifySignature(message, sig, key);
         }
 
         // not a valid sub command
