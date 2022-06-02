@@ -115,7 +115,7 @@ public class SymmetricCryptogram implements IService {
                         + " the file is automatically encrypted with passphrase '1234' as \"[message_name]-symm-encrypted.txt\"\n\n");
         sb.append(
                 mainColor
-                        + separator + RED + " Example 1 [Encryption]:\n" + reset + separator
+                        + separator + RED + " Example 1 [Decryption]:\n" + reset + separator
                         + " symm -d C:/Users/Benjamin/Documents/message-symm-encrypted.txt 1234\n\n" + separator
                         + " the file is automatically decrypted using passphrase '1234' as \"[message_name]-symm-decrypted.txt\"\n");
         // Reset Console Color
