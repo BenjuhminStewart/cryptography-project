@@ -23,3 +23,12 @@ java Hash.java
 2. KMACXOF256
 3. KMAC256
 4. KECCAK *f*
+
+## Commands
+
+- `symm`: Encrypt/Decrypt a file symmetrically using a passphrase.
+- `auth`: Computes an authentication tag (MAC) of a given file under a given passphrase.
+- `kmac`: Compute cryptographic hash
+- `ec`: Elliptic curve functions
+- `help`: List all commands
+- `exit`: Exit the program
